@@ -1,0 +1,125 @@
+---
+#./remediation.yml
+#Playbook for Remediation only
+- name: Remediation
+  hosts: all
+  tasks:
+    - debug: msg="Start remediation."
+ 
+    - name: Gather the package facts
+      package_facts:
+        manager: auto
+
+    - name: Collect facts about system services
+      service_facts:
+      register: services_state
+
+    - name: "2.2.3 Ensure Avahi Server is not installed (Automated). Stop service avahi-autoipd, if started."
+      register: service_stop
+      failed_when:
+        - '"Could not find the requested service" not in service_stop.msg'
+        - service_stop.rc != 0
+      service:
+        name: avahi-autoipd
+        state: stopped
+
+    - name: "2.2.3 Ensure Avahi Server is not installed (Automated). Stop service avahi, if started."
+      register: service_stop
+      failed_when:
+        - '"Could not find the requested service" not in service_stop.msg'
+        - service_stop.rc != 0
+      service:
+        name: avahi
+        state: stopped
+
+    - name: Remove package if found 2.2.1 - 2.2.16
+      dnf:
+        name: "{{ item.package }}"
+        state: absent
+      loop: "{{ rules }}"
+
+    #Part below for the "2.2.17 Ensure mail transfer agent is configured for local-only mode (Automated)"
+    - wait_for:
+        host: 0.0.0.0
+        port: 25
+        timeout: 3
+      register: check_port25
+      ignore_errors: yes
+    - debug:
+        msg: "Port 25 open"
+      when: check_port25.failed == false
+
+    - debug:
+        msg: "Port 25 close"
+      when: check_port25.failed == true
+    - name: "2.2.17 Ensure mail transfer agent is configured for local-only mode (Automated)"
+      block:
+        - name: "2.2.17 Ensure mail transfer agent is configured for local-only mode (Automated) | Make changes if postfix is installed"
+          lineinfile:
+            path: /etc/postfix/main.cf
+            regexp: "^(#)?inet_interfaces"
+            line: "inet_interfaces = loopback-only"
+            create: yes
+          when: "'postfix' in ansible_facts.packages"
+
+        - name: "2.2.3 Ensure Avahi Server is not installed (Automated). Stop service avahi-autoipd, if started."
+          service:
+            name: postfix
+            state: restarted
+          when: "'postfix' in ansible_facts.packages"
+
+        - name: "2.2.17 Ensure mail transfer agent is configured for local-only mode (Automated) | Message out other main agents"
+          debug:
+            msg:
+              - "Warning!! You are not using postfix"
+              - "Please review your vendors documentation to configure local-only mode"
+          when:
+            - "'postfix' not in ansible_facts.packages"
+      when: check_port25.failed == false
+
+    - name: "2.2.18 Ensure nfs-utils is not installed or the nfs-server service is masked (Automated)"
+      block:
+        - name: "2.2.18 and nfs_package_is_required - false"
+          dnf:
+            name: nfs-utils
+            state: absent
+          when:
+            - nfs_package_is_required == false
+
+        - name: "2.2.18 and nfs_package_is_required - true"
+          systemd:
+            name: nfs-utils
+            state: stopped
+            masked: yes
+
+          when:
+            - nfs_package_is_required == true
+            - "'nfs-utils' in ansible_facts.services"
+
+      when: "'nfs-utils' in ansible_facts.packages"
+
+    - name: "2.2.19 Ensure rpcbind is not installed or the rpcbind services are masked (Automated)"
+      block:
+        - name: "2.2.19 and rpcbind_is_required - false"
+          dnf:
+            name: rpcbind
+            state: absent
+          when:
+            - rpcbind_is_required == false
+
+        - name: "2.2.19 and rpcbind_is_required - true"
+          block:
+            - name: "2.2.19 and rpcbind_is_required - true, masked rpcbind"
+              systemd:
+                name: rpcbind
+                state: stopped
+                masked: yes
+            - name: "2.2.19 and rpcbind_is_required - true, masked rpcbind.socket"
+              systemd:
+                name: rpcbind.socket
+                state: stopped
+                masked: yes
+          when:
+            - rpcbind_is_required == true
+            - "'rpcbind' in ansible_facts.services"
+      when: "'rpcbind' in ansible_facts.packages"

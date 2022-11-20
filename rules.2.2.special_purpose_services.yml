@@ -1,0 +1,47 @@
+---
+#./rules.2.2.special_purpose_services.yml
+#define Rules for
+#CIS_Red_Hat_Enterprise_Linux_8_Benchmark_v2.0.0
+#Part: 2.2 Special Purpose Services
+nfs_package_is_required: true
+rpcbind_is_required: true
+rules:
+  - package: xinetd
+    rulename: "2.2.1 Ensure xinetd is not installed (Automated)"
+  - package: xorg-x11-server-common
+    rulename: "2.2.2 Ensure xorg-x11-server-common is not installed (Automated)"
+  - package: avahi-autoipd
+    rulename: "2.2.3 Ensure Avahi Server is not installed (Automated)"
+  - package: avahi
+    rulename: "2.2.3 Ensure Avahi Server is not installed (Automated)"
+  - package: cups
+    rulename: "2.2.4 Ensure CUPS is not installed (Automated)"
+  - package: dhcp-server
+    rulename: "2.2.5 Ensure DHCP Server is not installed (Automated)"
+  - package: bind
+    rulename: "2.2.6 Ensure DNS Server is not installed (Automated)"
+  - package: ftp
+    rulename: "2.2.7 Ensure FTP Server is not installed (Automated)"
+  - package: vsftpd
+    rulename: "2.2.8 Ensure VSFTP Server is not installed (Automated)"
+  - package: tftp-server
+    rulename: "2.2.9 Ensure TFTP Server is not installed (Automated)"
+  - package: httpd
+    rulename: "2.2.10 Ensure a web server is not installed (Automated)"
+  - package: nginx
+    rulename: "2.2.10 Ensure a web server is not installed (Automated)"
+  - package: dovecot
+    rulename: "2.2.11 Ensure IMAP and POP3 server is not installed (Automated)"
+  - package: cyrus-imapd
+    rulename: "2.2.11 Ensure IMAP and POP3 server is not installed (Automated)"
+  - package: samba
+    rulename: "2.2.12 Ensure Samba is not installed (Automated)"
+  - package: squid
+    rulename: "2.2.13 Ensure HTTP Proxy Server is not installed (Automated)"
+  - package: net-snmp
+    rulename: "2.2.14 Ensure net-snmp is not installed (Automated)"
+  - package: ypserv
+    rulename: "2.2.15 Ensure NIS server is not installed (Automated)"
+  - package: telnet-server
+    rulename: "2.2.16 Ensure telnet-server is not installed (Automated)"
+  

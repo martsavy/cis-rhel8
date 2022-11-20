@@ -1,0 +1,6 @@
+---
+#./var.yml
+#define general variables
+audit: false
+remediation: true
+auditlogfile: "/tmp/AuditIssues-{{inventory_hostname}}-{{ ansible_date_time.date }}_{{ ansible_date_time.time }}.log"

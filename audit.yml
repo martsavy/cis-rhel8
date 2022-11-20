@@ -1,0 +1,109 @@
+---
+#./audit.yml
+#Playbook for Audit only
+- name: Audit
+  hosts: all
+  tasks:
+    - debug: msg="Start Audit."
+
+    - name: Gather the package facts
+      package_facts:
+        manager: auto
+
+    - name: Collect facts about system services
+      service_facts:
+      register: services_state
+
+    - name: Check whether a package is installed
+      debug:
+        msg:
+          - "Audit check found issue, see infomation below:"
+          - "Packagename: {{ item.package }}"
+          - "RuleName: {{ item.rulename }}"
+      loop: "{{ rules }}"
+      when: "item.package in ansible_facts.packages"
+      register: check_output
+
+    - name: Writing Audit found issues to logfile
+      lineinfile:
+        path: "{{ auditlogfile }}"
+        line: "{{ item.item.rulename }}. Audit not passed! Package should be remove: {{ item.item.package }} "
+        create: yes
+      with_items: "{{ check_output.results }}"
+      when: "item is not skipped"
+      delegate_to: localhost
+
+    - name: "2.2.17 Ensure mail transfer agent is configured for local-only mode (Automated)"
+      block:
+        - wait_for:
+            host: 0.0.0.0
+            port: 25
+            timeout: 3
+          register: check_port25
+          ignore_errors: yes
+
+        - debug:
+            msg: "Port 25 open"
+          when: check_port25.failed == false
+
+        - name: Writing Audit found issues to logfile
+          lineinfile:
+            path: "{{ auditlogfile }}"
+            line: "2.2.17 Ensure mail transfer agent is configured for local-only mode (Automated): Audit not passed! Port 25 is open "
+            create: yes
+          when: check_port25.failed == false
+          delegate_to: localhost
+
+    - name: "2.2.18 Ensure nfs-utils is not installed or the nfs-server service is masked (Automated)"
+      block:
+        - name: "2.2.18 and nfs_package_is_required - false"
+          lineinfile:
+            path: "{{ auditlogfile }}"
+            line: "2.2.18 Ensure nfs-utils is not installed or the nfs-server service is masked (Automated): Audit not passed! Package should be remove:nfs-utils"
+            create: yes
+          delegate_to: localhost
+
+          when:
+            - nfs_package_is_required == false
+
+        - name: "2.2.18 and nfs_package_is_required - true"
+          block:
+            - name: "2.2.18 and nfs_package_is_required - true and service exist"
+              lineinfile:
+                path: "{{ auditlogfile }}"
+                line: "2.2.18 Ensure nfs-utils is not installed or the nfs-server service is masked (Automated): Audit not passed! Should be stop and mask the nfs-server service"
+                create: yes
+              delegate_to: localhost
+              when: ansible_facts.services['nfs-utils']['status'] != "masked"
+
+          when:
+            - nfs_package_is_required == true
+            - "'nfs-utils' in ansible_facts.services"
+
+      when: "'nfs-utils' in ansible_facts.packages"
+
+    - name: "2.2.19 Ensure rpcbind is not installed or the rpcbind services are masked (Automated)"
+      block:
+        - name: "2.2.19 and rpcbind_is_required - false"
+          lineinfile:
+            path: "{{ auditlogfile }}"
+            line: "2.2.19 Ensure rpcbind is not installed or the rpcbind services are masked (Automated): Audit not passed! Package should be remove:rpcbind"
+            create: yes
+          delegate_to: localhost
+
+          when:
+            - rpcbind_is_required == false
+
+        - name: "2.2.19 and rpcbind_is_required - true"
+          block:
+            - name: "2.2.19 and rpcbind_is_required - true and service exist"
+              lineinfile:
+                path: "{{ auditlogfile }}"
+                line: "2.2.19 Ensure rpcbind is not installed or the rpcbind services are masked (Automated): Audit not passed! Should be stop and mask the rpcbind and rpcbind.socket services"
+                create: yes
+              delegate_to: localhost
+              when: (ansible_facts.services['rpcbind']['status'] != "masked") or (ansible_facts.services['rpcbind.socket']['status'] != "masked")
+          when:
+            - rpcbind_is_required == true
+            - "'rpcbind' in ansible_facts.services"
+      when: "'rpcbind' in ansible_facts.packages"

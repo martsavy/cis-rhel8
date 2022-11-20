@@ -1,0 +1,16 @@
+---
+- name: General
+  hosts: all
+  tasks:
+    - name: "Include general variables"
+      include_vars: var.yml
+    - name: "Include list all rules '2.2 Special Purpose Services' or audit and remediation"
+      include_vars: rules.2.2.special_purpose_services.yml
+
+- name: Audit
+  import_playbook: audit.yml
+  when: audit == true
+
+- name: Remediation
+  import_playbook: remediation.yml
+  when: remediation == true

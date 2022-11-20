@@ -1,0 +1,14 @@
+[all:vars]
+ansible_become=yes
+ansible_become_method=sudo
+ansible_sudo_pass=osboxes.org
+[linux:vars]
+ansible_sudo_pass=osboxes.org
+ansible_password=osboxes.org
+[linux]
+centos ansible_host=192.168.0.59 ansible_ssh_user=osboxes ansible_ssh_pass=osboxes.org 
+[rhel:vars]
+ansible_sudo_pass=<your sudo pass>
+ansible_password=<your sudo pass>
+[rhel]
+rhel8 ansible_host=192.168.0.186 ansible_ssh_user=<your ssh username pass> ansible_ssh_pass=<your ssh pass> 
